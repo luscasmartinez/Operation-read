@@ -1,0 +1,23 @@
+# Segredos - NUNCA versionar
+backend/credentials/
+backend/.env
+frontend/.env
+*.env
+service-account*.json
+
+# Backend
+backend/.cache/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.venv/
+*.pyc
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# SO / editores
+.DS_Store
+.vscode/
+.idea/

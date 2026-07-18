@@ -1,0 +1,19 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/service-account.json
+      GOOGLE_DRIVE_FOLDER_ID: ${GOOGLE_DRIVE_FOLDER_ID}
+      CORS_ALLOWED_ORIGINS: http://localhost:5173
+      PORT: 8080
+    volumes:
+      - ./backend/credentials:/app/credentials:ro
+      - backend_cache:/app/.cache
+
+# O frontend não precisa de container: rode com `cd frontend && npm run dev`
+# localmente, ou publique direto na Vercel (ver README, seção 3.2).
+
+volumes:
+  backend_cache:
