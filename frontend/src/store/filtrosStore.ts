@@ -11,7 +11,10 @@ interface FiltrosState {
   /** snapshot dos filtros com que o mapa foi carregado */
   filtrosCarregados: FiltrosAtivos | null;
 
-  setFiltro: <K extends keyof FiltrosAtivos>(chave: K, valor: FiltrosAtivos[K]) => void;
+  setFiltro: <K extends keyof FiltrosAtivos>(
+    chave: K,
+    valor: FiltrosAtivos[K]
+  ) => void;
   limparFiltros: () => void;
   setAtributoCor: (attr: AtributoCor) => void;
   toggleSidebar: () => void;
@@ -20,7 +23,7 @@ interface FiltrosState {
   resetMapa: () => void;
 }
 
-export const useFiltrosStore = create<FiltrosState>((set, get) => ({
+export const useFiltrosStore = create<FiltrosState>((set) => ({
   filtros: filtrosVazios,
   atributoCor: "indicador",
   sidebarAberta: true,
@@ -30,17 +33,22 @@ export const useFiltrosStore = create<FiltrosState>((set, get) => ({
   setFiltro: (chave, valor) =>
     set((state) => ({
       filtros: { ...state.filtros, [chave]: valor },
-      // Qualquer mudança de filtro invalida o mapa atual
       mapaAtivo: false,
     })),
 
   limparFiltros: () =>
-    set({ filtros: filtrosVazios, mapaAtivo: false, filtrosCarregados: null }),
+    set({
+      filtros: filtrosVazios,
+      mapaAtivo: false,
+      filtrosCarregados: null,
+    }),
 
   setAtributoCor: (attr) => set({ atributoCor: attr }),
 
   toggleSidebar: () =>
-    set((state) => ({ sidebarAberta: !state.sidebarAberta })),
+    set((state) => ({
+      sidebarAberta: !state.sidebarAberta,
+    })),
 
   carregarMapa: () =>
     set((state) => ({
@@ -48,5 +56,9 @@ export const useFiltrosStore = create<FiltrosState>((set, get) => ({
       filtrosCarregados: state.filtros,
     })),
 
-  resetMapa: () => set({ mapaAtivo: false, filtrosCarregados: null }),
+  resetMapa: () =>
+    set({
+      mapaAtivo: false,
+      filtrosCarregados: null,
+    }),
 }));
