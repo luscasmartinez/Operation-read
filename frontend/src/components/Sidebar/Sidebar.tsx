@@ -3,6 +3,7 @@ import { useFiltrosStore } from "../../store/filtrosStore";
 import type { ContagemResponse, LeituraMapa } from "../../types/leitura";
 import { exportarParaCsv } from "../../utils/exportCsv";
 import { FilterGroup } from "./FilterGroup";
+import type { EstadoSync } from "../../hooks/useSync";
 
 interface SidebarProps {
   dadosFiltrados: LeituraMapa[];
@@ -11,6 +12,7 @@ interface SidebarProps {
   filtrosValidos: boolean;
   onCarregarMapa: () => void;
   mapaAtivo: boolean;
+  sync: EstadoSync & { iniciarSincronizacao: () => void };
 }
 
 export function Sidebar({
@@ -20,6 +22,7 @@ export function Sidebar({
   filtrosValidos,
   onCarregarMapa,
   mapaAtivo,
+  sync,
 }: SidebarProps) {
   const disponiveis = useFiltrosDisponiveis(useFiltrosStore((s) => s.filtros));
   const { filtros, setFiltro, limparFiltros, sidebarAberta, toggleSidebar } = useFiltrosStore();
@@ -141,6 +144,87 @@ export function Sidebar({
 
       {/* Rodapé */}
       <div className="flex flex-col gap-2 border-t border-panel-border p-3">
+
+        {/* Banner de última sincronização */}
+        {sync.ultimaSincronizacao && !sync.sincronizando && !sync.erro && sync.erro !== "__ja_atualizado__" && (
+          <div className="flex items-center justify-between rounded-md border border-panel-border bg-panel px-2 py-1.5">
+            <div className="text-[10px] text-slate-500 leading-tight">
+              <p className="font-medium text-slate-400">Última atualização</p>
+              <p>
+                {new Date(sync.ultimaSincronizacao).toLocaleString("pt-BR", {
+                  day: "2-digit", month: "2-digit", year: "numeric",
+                  hour: "2-digit", minute: "2-digit", second: "2-digit",
+                })}
+              </p>
+              <p>{sync.totalRegistros.toLocaleString("pt-BR")} registros</p>
+            </div>
+            <button
+              onClick={sync.iniciarSincronizacao}
+              title="Sincronizar com Google Drive"
+              className="ml-2 flex-shrink-0 rounded-md border border-panel-border px-2 py-1 text-[10px] text-slate-400 hover:bg-panel-border hover:text-slate-200"
+            >
+              ↻
+            </button>
+          </div>
+        )}
+
+        {/* Progresso inline de sync (quando já há dados) */}
+        {sync.sincronizando && sync.progresso && (
+          <div className="rounded-md border border-panel-border bg-panel p-2 space-y-1.5">
+            <p className="text-[10px] font-medium text-slate-400">
+              Sincronizando... {Math.round(sync.progresso.porcentagem)}%
+            </p>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-panel-border">
+              <div
+                className="h-full rounded-full bg-accent transition-all duration-200"
+                style={{ width: `${Math.round(sync.progresso.porcentagem)}%` }}
+              />
+            </div>
+            {sync.progresso.totalRegistros > 0 && (
+              <p className="text-[10px] text-slate-500">
+                {sync.progresso.registrosProcessados.toLocaleString("pt-BR")} /{" "}
+                {sync.progresso.totalRegistros.toLocaleString("pt-BR")} reg
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* "Já atualizado" */}
+        {sync.erro === "__ja_atualizado__" && sync.ultimaSincronizacao && (
+          <div className="flex items-center justify-between rounded-md border border-panel-border bg-panel px-2 py-1.5">
+            <div className="text-[10px] text-slate-500 leading-tight">
+              <p className="font-medium text-green-400">✓ Dados atualizados</p>
+              <p>
+                {new Date(sync.ultimaSincronizacao).toLocaleString("pt-BR", {
+                  day: "2-digit", month: "2-digit", year: "numeric",
+                  hour: "2-digit", minute: "2-digit", second: "2-digit",
+                })}
+              </p>
+              <p>{sync.totalRegistros.toLocaleString("pt-BR")} registros</p>
+            </div>
+            <button
+              onClick={sync.iniciarSincronizacao}
+              title="Sincronizar novamente"
+              className="ml-2 flex-shrink-0 rounded-md border border-panel-border px-2 py-1 text-[10px] text-slate-400 hover:bg-panel-border hover:text-slate-200"
+            >
+              ↻
+            </button>
+          </div>
+        )}
+
+        {/* Erro de sync (sem perder o app) */}
+        {sync.erro && sync.erro !== "__ja_atualizado__" && (
+          <div className="rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1.5 text-[10px] text-red-300">
+            <p className="font-medium">Falha na sincronização</p>
+            <p className="mt-0.5">{sync.erro}</p>
+            <button
+              onClick={sync.iniciarSincronizacao}
+              className="mt-1 rounded border border-red-500/40 px-2 py-0.5 text-[10px] hover:bg-red-500/20"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
         {/* Contagem */}
         {textoContagem && (
           <div className={`text-center text-[11px] font-medium ${contando ? "text-slate-500" : "text-accent"}`}>

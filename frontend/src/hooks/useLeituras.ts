@@ -1,5 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { mapaService } from "../services/mapaService";
+import {
+  consultarMarcadores,
+  contarRegistrosFiltrados,
+} from "../services/queryService";
 import type { FiltrosAtivos } from "../types/leitura";
 
 export function filtrosObrigatoriosValidos(filtros: FiltrosAtivos): boolean {
@@ -9,24 +12,30 @@ export function filtrosObrigatoriosValidos(filtros: FiltrosAtivos): boolean {
   );
 }
 
-/** Consulta somente a contagem — sem payload geográfico. */
+/**
+ * Conta os registros que correspondem aos filtros ativos consultando o IndexedDB.
+ * Nunca realiza chamadas à API.
+ */
 export function useContagem(filtros: FiltrosAtivos) {
   return useQuery({
-    queryKey: ["contagem", filtros],
-    queryFn: () => mapaService.contarRegistros(filtros),
+    queryKey: ["contagem-local", filtros],
+    queryFn: () => contarRegistrosFiltrados(filtros),
     enabled: filtrosObrigatoriosValidos(filtros),
-    staleTime: 30_000,
-    retry: 1,
+    staleTime: Infinity,
+    retry: 0,
   });
 }
 
-/** Carrega os marcadores filtrados. Só ativa quando `enabled` for true. */
+/**
+ * Retorna os marcadores do mapa consultando exclusivamente o IndexedDB.
+ * Nunca realiza chamadas à API.
+ */
 export function useMapa(filtros: FiltrosAtivos | null, enabled: boolean) {
   return useQuery({
-    queryKey: ["mapa", filtros],
-    queryFn: () => mapaService.buscarMarcadores(filtros!),
+    queryKey: ["mapa-local", filtros],
+    queryFn: () => consultarMarcadores(filtros!),
     enabled: enabled && filtros !== null,
-    staleTime: 5 * 60_000,
-    retry: 1,
+    staleTime: Infinity,
+    retry: 0,
   });
 }

@@ -27,6 +27,7 @@ class DataStore:
         self._df: pd.DataFrame = pd.DataFrame()
         self._last_sync: datetime | None = None
         self._files_loaded: int = 0
+        self._latest_file_modified: str | None = None
 
     def sync(self) -> None:
         """
@@ -62,10 +63,16 @@ class DataStore:
             if not df.empty:
                 frames.append(df)
 
+        latest_modified: str | None = None
+        for f in remote_files:
+            if latest_modified is None or f.modified_time > latest_modified:
+                latest_modified = f.modified_time
+
         with self._lock:
             self._df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
             self._last_sync = datetime.now(timezone.utc)
             self._files_loaded = len(frames)
+            self._latest_file_modified = latest_modified
 
         logger.info(
             "Sincronização concluída: %d arquivos, %d registros.",
@@ -84,4 +91,5 @@ class DataStore:
                 "last_sync": self._last_sync.isoformat() if self._last_sync else None,
                 "files_loaded": self._files_loaded,
                 "total_records": len(self._df),
+                "latest_file_modified": self._latest_file_modified,
             }

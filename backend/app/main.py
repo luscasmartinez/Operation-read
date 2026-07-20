@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import routes_estatisticas, routes_filtros, routes_health, routes_leituras
+from app.api import routes_estatisticas, routes_filtros, routes_health, routes_leituras, routes_sync
 from app.config import get_settings
 from app.scheduler import start_scheduler
 from app.services.cache_service import CacheService
@@ -54,6 +54,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(routes_health.router)
+    app.include_router(routes_sync.router)
     app.include_router(routes_leituras.router)
     app.include_router(routes_estatisticas.router)
     app.include_router(routes_filtros.router)

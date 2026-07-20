@@ -4,11 +4,36 @@ import { MapView } from "./components/Map/MapView";
 import { SmartSearch } from "./components/SearchBar/SmartSearch";
 import { Sidebar } from "./components/Sidebar/Sidebar";
 import { StatsCards } from "./components/StatsCards/StatsCards";
+import { SyncPanel } from "./components/Sync/SyncPanel";
 import { useContagem, useMapa, filtrosObrigatoriosValidos } from "./hooks/useLeituras";
 import { useLeiturasFiltradas } from "./hooks/useLeiturasFiltradas";
+import { useSync } from "./hooks/useSync";
 import { useFiltrosStore } from "./store/filtrosStore";
 
 export default function App() {
+  // ── Sync ─────────────────────────────────────────────────────────────────
+  const sync = useSync();
+
+  // Enquanto verifica o banco local, exibe tela vazia para evitar flash
+  if (sync.inicializando) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-panel">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Sem dados locais: exibe painel de sincronização (primeira vez ou banco apagado)
+  // Se tiver dados, permanece no app mesmo que haja erro ou sync em andamento.
+  if (!sync.temDadosLocais) {
+    return <SyncPanel estado={sync} onSincronizar={sync.iniciarSincronizacao} />;
+  }
+
+  return <AppComDados sync={sync} />;
+}
+
+/** Componente interno renderizado apenas quando há dados locais disponíveis. */
+function AppComDados({ sync }: { sync: ReturnType<typeof useSync> }) {
   const { filtros, atributoCor, mapaAtivo, filtrosCarregados, carregarMapa } = useFiltrosStore();
   const [confirmAberto, setConfirmAberto] = useState(false);
 
@@ -60,6 +85,7 @@ export default function App() {
         filtrosValidos={filtrosValidos}
         onCarregarMapa={handleCarregarMapa}
         mapaAtivo={mapaAtivo}
+        sync={sync}
       />
 
       <main className="relative flex-1">

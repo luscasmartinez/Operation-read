@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { mapaService } from "../services/mapaService";
+import { calcularFiltrosDisponiveis } from "../services/queryService";
 import type { FiltrosAtivos, FiltrosDisponiveis } from "../types/leitura";
 
 const vazio: FiltrosDisponiveis = {
@@ -8,13 +8,13 @@ const vazio: FiltrosDisponiveis = {
 };
 
 /**
- * Retorna os valores disponíveis para cada filtro em cascata.
- * O backend estreita as opções downstream com base nos filtros upstream selecionados.
+ * Calcula os filtros disponíveis em cascata consultando exclusivamente o IndexedDB.
+ * Nunca realiza chamadas à API.
  */
 export function useFiltrosDisponiveis(filtros: FiltrosAtivos): FiltrosDisponiveis {
   const { data } = useQuery({
     queryKey: [
-      "filtros",
+      "filtros-local",
       filtros.referencia,
       filtros.cidade,
       filtros.micro,
@@ -22,8 +22,10 @@ export function useFiltrosDisponiveis(filtros: FiltrosAtivos): FiltrosDisponivei
       filtros.colaborador,
       filtros.ocorrencia,
     ],
-    queryFn: () => mapaService.buscarFiltros(filtros),
-    staleTime: 60_000,
+    queryFn: () => calcularFiltrosDisponiveis(filtros),
+    // Dados locais não mudam até a próxima sync; sem necessidade de revalidar
+    staleTime: Infinity,
+    placeholderData: vazio,
   });
   return data ?? vazio;
 }

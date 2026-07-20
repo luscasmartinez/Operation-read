@@ -12,6 +12,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
     "clsx": "^2.1.1",
+    "dexie": "^3.2.7",
     "html-to-image": "^1.11.11",
     "leaflet": "^1.9.4",
     "leaflet.heat": "^0.2.0",

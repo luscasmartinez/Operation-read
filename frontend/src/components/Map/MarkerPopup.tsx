@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../../api/client";
+import { obterDetalheRegistro } from "../../services/queryService";
 import type { LeituraMapa } from "../../types/leitura";
 
 const LABELS: Record<string, string> = {
@@ -30,10 +30,9 @@ export function MarkerPopup({ resumo }: { resumo: LeituraMapa }) {
 
   useEffect(() => {
     let cancelado = false;
-    api
-      .leituraDetalhe(resumo.id)
+    obterDetalheRegistro(resumo.id)
       .then((res) => {
-        if (!cancelado) setCampos(res.campos);
+        if (!cancelado) setCampos(res);
       })
       .finally(() => {
         if (!cancelado) setCarregando(false);

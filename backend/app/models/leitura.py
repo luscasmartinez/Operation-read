@@ -63,4 +63,10 @@ class ContagemResponse(BaseModel):
     necessita_confirmacao: bool
 
 
+class SyncStatusResponse(BaseModel):
+    ultimaAtualizacao: str | None
+    arquivoModificadoEm: str | None
+    totalRegistros: int
+
+
 MAX_REGISTROS_SEM_CONFIRMACAO: int = 50_000
