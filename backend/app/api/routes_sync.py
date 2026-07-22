@@ -1,15 +1,19 @@
 import logging
+from pathlib import Path
 
 import orjson
 import pandas as pd
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
-from app.models.leitura import SyncStatusResponse
+from app.models.leitura import SyncStatusResponse, UploadExcelResponse
+from app.services.excel_loader import load_excel
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["sync"])
+
+VALID_EXTENSIONS = {".xlsx", ".xls"}
 
 # Colunas que serão incluídas no payload de sincronização
 SYNC_COLUMNS = [
@@ -111,4 +115,63 @@ def sync_dados(request: Request):
         _gerar_ndjson(df_out),
         media_type="application/x-ndjson",
         headers={"X-Total-Records": str(total)},
+    )
+
+
+@router.post("/sync/upload", response_model=UploadExcelResponse)
+async def upload_e_substituir_excel(
+    request: Request,
+    file: UploadFile = File(...),
+):
+    """
+    Faz upload de um Excel, substitui o arquivo atual no Drive
+    e sincroniza imediatamente o DataStore em memória.
+    """
+    file_name = file.filename or "leituras.xlsx"
+    ext = Path(file_name).suffix.lower()
+
+    if ext not in VALID_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Formato inválido. Envie um arquivo .xlsx ou .xls.",
+        )
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="O arquivo enviado está vazio.")
+
+    df_preview = load_excel(content, file_name)
+    total_registros_arquivo = len(df_preview)
+
+    if total_registros_arquivo <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "O arquivo não possui registros válidos para o mapa. "
+                "Verifique se contém Latitude Real e Longitude Real."
+            ),
+        )
+
+    try:
+        resultado = request.app.state.data_store.replace_excel_and_sync(
+            content=content,
+            file_name=file_name,
+        )
+    except Exception as exc:
+        logger.exception("Falha ao substituir Excel no Drive")
+        raise HTTPException(
+            status_code=500,
+            detail="Não foi possível substituir o arquivo no Google Drive.",
+        ) from exc
+
+    drive_file = resultado["drive_file"]
+    status = resultado["status"]
+
+    return UploadExcelResponse(
+        arquivoNoDriveId=drive_file.file_id,
+        arquivoNoDriveNome=drive_file.name,
+        arquivoNoDriveModificadoEm=drive_file.modified_time,
+        totalRegistrosArquivo=total_registros_arquivo,
+        totalRegistrosAtual=status["total_records"],
+        ultimaAtualizacao=status["last_sync"],
     )

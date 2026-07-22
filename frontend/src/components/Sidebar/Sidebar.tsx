@@ -2,6 +2,7 @@ import { useFiltrosDisponiveis } from "../../hooks/useFiltrosDisponiveis";
 import { useFiltrosStore } from "../../store/filtrosStore";
 import type { ContagemResponse, LeituraMapa } from "../../types/leitura";
 import { exportarParaCsv } from "../../utils/exportCsv";
+import { UploadReplacePanel } from "../Sync/UploadReplacePanel";
 import { FilterGroup } from "./FilterGroup";
 import type { EstadoSync } from "../../hooks/useSync";
 
@@ -12,7 +13,7 @@ interface SidebarProps {
   filtrosValidos: boolean;
   onCarregarMapa: () => void;
   mapaAtivo: boolean;
-  sync: EstadoSync & { iniciarSincronizacao: () => void };
+  sync: EstadoSync & { iniciarSincronizacao: () => Promise<void> | void };
 }
 
 export function Sidebar({
@@ -225,6 +226,14 @@ export function Sidebar({
             </button>
           </div>
         )}
+
+        <UploadReplacePanel
+          disabled={sync.sincronizando}
+          onUploadConcluido={async () => {
+            await sync.iniciarSincronizacao();
+          }}
+        />
+
         {/* Contagem */}
         {textoContagem && (
           <div className={`text-center text-[11px] font-medium ${contando ? "text-slate-500" : "text-accent"}`}>

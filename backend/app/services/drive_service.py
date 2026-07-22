@@ -14,11 +14,11 @@ from dataclasses import dataclass
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseDownload
+from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 
 logger = logging.getLogger(__name__)
 
-SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/drive"]
 
 EXCEL_MIME_TYPES = (
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # .xlsx
@@ -85,3 +85,52 @@ class DriveService:
         while not done:
             _, done = downloader.next_chunk()
         return buffer.getvalue()
+
+    def replace_latest_excel(self, content: bytes, file_name: str) -> DriveFile:
+        """
+        Substitui o arquivo Excel mais recente da pasta.
+        Se não houver arquivo, cria um novo.
+        """
+        latest_file: DriveFile | None = None
+        for drive_file in self.list_excel_files():
+            if latest_file is None or drive_file.modified_time > latest_file.modified_time:
+                latest_file = drive_file
+
+        upload = MediaIoBaseUpload(
+            io.BytesIO(content),
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            resumable=False,
+        )
+
+        if latest_file is not None:
+            logger.info("Substituindo arquivo no Drive: %s", latest_file.name)
+            response = (
+                self._client.files()
+                .update(
+                    fileId=latest_file.file_id,
+                    media_body=upload,
+                    fields="id, name, modifiedTime, size",
+                )
+                .execute()
+            )
+        else:
+            logger.info("Nenhum Excel encontrado na pasta. Criando novo arquivo: %s", file_name)
+            response = (
+                self._client.files()
+                .create(
+                    body={
+                        "name": file_name,
+                        "parents": [self._folder_id],
+                    },
+                    media_body=upload,
+                    fields="id, name, modifiedTime, size",
+                )
+                .execute()
+            )
+
+        return DriveFile(
+            file_id=response["id"],
+            name=response["name"],
+            modified_time=response["modifiedTime"],
+            size=int(response["size"]) if response.get("size") else None,
+        )

@@ -93,3 +93,16 @@ class DataStore:
                 "total_records": len(self._df),
                 "latest_file_modified": self._latest_file_modified,
             }
+
+    def replace_excel_and_sync(self, content: bytes, file_name: str) -> dict:
+        """
+        Substitui o Excel atual no Drive e sincroniza os dados em memória.
+        """
+        drive_file = self._drive.replace_latest_excel(content=content, file_name=file_name)
+        self.sync()
+        status = self.get_status()
+
+        return {
+            "drive_file": drive_file,
+            "status": status,
+        }

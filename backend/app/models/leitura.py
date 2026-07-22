@@ -69,4 +69,13 @@ class SyncStatusResponse(BaseModel):
     totalRegistros: int
 
 
+class UploadExcelResponse(BaseModel):
+    arquivoNoDriveId: str
+    arquivoNoDriveNome: str
+    arquivoNoDriveModificadoEm: str
+    totalRegistrosArquivo: int
+    totalRegistrosAtual: int
+    ultimaAtualizacao: str | None
+
+
 MAX_REGISTROS_SEM_CONFIRMACAO: int = 50_000
